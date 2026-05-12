@@ -17,6 +17,14 @@ interface DartPracticeGameProps {
   onBack: () => void;
 }
 
+const STORAGE_KEY = "friendly-round-the-clock-save";
+
+interface SavedGame {
+  gameStart: string | null;
+  data: Record<number, Attempt[]>;
+  showStats: boolean;
+}
+
 export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [gameStart, setGameStart] = useState<Date | null>(null);
   const [data, setData] = useState<Record<number, Attempt[]>>({});
@@ -24,6 +32,22 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const [focusedInputs, setFocusedInputs] = useState<Record<string, boolean>>({});
   const [showStats, setShowStats] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const rawSavedGame = window.localStorage.getItem(STORAGE_KEY);
+    if (!rawSavedGame) return;
+
+    try {
+      const savedGame = JSON.parse(rawSavedGame) as SavedGame;
+      setGameStart(savedGame.gameStart ? new Date(savedGame.gameStart) : null);
+      setData(savedGame.data ?? {});
+      setShowStats(savedGame.showStats ?? false);
+      setSaveMessage("Loaded saved game from this browser.");
+    } catch {
+      setSaveMessage("Could not load saved game.");
+    }
+  }, []);
 
   const startNewGame = () => {
     setGameStart(new Date());
@@ -32,6 +56,18 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
     setData(fresh);
     setFocusKey("1-0");
     setShowStats(false);
+    setSaveMessage(null);
+  };
+
+  const saveGame = () => {
+    const savedGame: SavedGame = {
+      gameStart: gameStart ? gameStart.toISOString() : null,
+      data,
+      showStats,
+    };
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedGame));
+    setSaveMessage("Saved to this browser.");
   };
 
   const updateAttempt = (target: number, index: number, raw: string) => {
@@ -112,6 +148,9 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
         >
           <strong>Rules:</strong> Hit 1-20 in order. Doubles and triples count as singles. Arrows that fall off still count.
         </div>
+        {saveMessage && (
+          <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>{saveMessage}</div>
+        )}
         <StartNewGameButton onClick={startNewGame} />
         {gameStart && (
           <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
@@ -157,20 +196,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
         )}
         {gameStart && (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 24 }}>
-            <SaveButton
-              onClick={() => {
-                const content = TARGETS.map((target) => data[target]?.join(" ")).join("\n");
-                const blob = new Blob([content], { type: "text/plain" });
-                const pad = (n: number) => n.toString().padStart(2, "0");
-                const d = gameStart ? new Date(gameStart) : new Date();
-                const timestamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-                const filename = `friendly-round-the-clock-${timestamp}.txt`;
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                link.click();
-              }}
-            />
+            <SaveButton onClick={saveGame} />
             <StatsButton
               onClick={() => {
                 setShowStats(true);
