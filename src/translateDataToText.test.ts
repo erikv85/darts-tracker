@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 
+type AttemptData = Record<number, string[]>;
+
 // Function to translate form inputs to text format
-const translateDataToText = (data) => {
+const translateDataToText = (data: AttemptData) => {
   return Object.values(data)
     .map((attempts) => attempts.join(" "))
     .join("\n");

@@ -1,155 +1,69 @@
+import { useState } from "react";
+import type { CSSProperties } from "react";
+import DartPracticeGame from "./components/DartPracticeGame";
 
-import { useState, useRef, useEffect } from "react";
-import AttemptsRow from "./components/AttemptsRow";
-import StartNewGameButton from "./components/StartNewGameButton";
-import SaveButton from "./components/SaveButton";
-import StatsButton from "./components/StatsButton";
-import StatsSection from "./components/StatsSection";
+type Screen = "menu" | "dart-practice";
 
-import {
-  formatAttemptInput,
-  isValidAttempt,
-  shouldAddAttempt,
-  shouldAdvanceRow,
-} from "./utils/attemptUtils";
-import { TARGETS } from "./utils/constants";
-import type { Attempt } from "./utils/constants";
+const appShellStyle: CSSProperties = {
+  minHeight: "100vh",
+  width: "100vw",
+  background: "#ffffff",
+  padding: "24px",
+  fontFamily: "sans-serif",
+  color: "#111",
+  boxSizing: "border-box",
+};
 
+const contentStyle: CSSProperties = {
+  maxWidth: 900,
+  margin: "0 auto",
+};
+
+const menuCardStyle: CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 12,
+  padding: 20,
+  border: "1px solid #ddd",
+  borderRadius: 12,
+  background: "#fafafa",
+};
+
+const gameButtonStyle: CSSProperties = {
+  padding: "10px 16px",
+  border: "1px solid #ccc",
+  borderRadius: 8,
+  background: "#f0f0f0",
+  color: "#111",
+  fontWeight: 600,
+};
 
 export default function App() {
-  const [gameStart, setGameStart] = useState<Date | null>(null);
-  const [data, setData] = useState<Record<number, Attempt[]>>({});
-  const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const [focusKey, setFocusKey] = useState<string | null>(null);
-  const [focusedInputs, setFocusedInputs] = useState<Record<string, boolean>>({});
-  const [showStats, setShowStats] = useState(false);
+  const [screen, setScreen] = useState<Screen>("menu");
 
-
-
-  const startNewGame = () => {
-    setGameStart(new Date());
-    const fresh: Record<number, Attempt[]> = {};
-    TARGETS.forEach((t) => (fresh[t] = [""])); // Always start with one input per row
-    setData(fresh);
-    setFocusKey("1-0"); // Focus on the first input
-    setShowStats(false);
-  };
-
-  const updateAttempt = (
-    target: number,
-    index: number,
-    raw: string
-  ) => {
-    const value = formatAttemptInput(raw);
-    if (!isValidAttempt(value)) return;
-    setData((prev) => {
-      const copy = { ...prev };
-      const row = [...copy[target]];
-      row[index] = value;
-      copy[target] = row;
-      return copy;
-    });
-  };
-
-  const addAttempt = (target: number) => {
-    setData((prev) => {
-      const currentRow = prev[target] || [];
-      // Disallow adding if the last input is empty
-      if (currentRow.length === 0 || currentRow[currentRow.length - 1].trim() === "") {
-        return prev;
-      }
-      const nextIndex = currentRow.length;
-      setFocusKey(`${target}-${nextIndex}`);
-      return {
-        ...prev,
-        [target]: [...currentRow, ""],
-      };
-    });
-  };
-
-  // Use a callback ref to handle focusing and clearing focusKey
-  useEffect(() => {
-    if (focusKey && inputRefs.current[focusKey]) {
-      inputRefs.current[focusKey]?.focus();
-      // Instead of setState in effect, use setTimeout to avoid cascading renders
-      setTimeout(() => setFocusKey(null), 0);
-    }
-  }, [focusKey]);
+  if (screen === "dart-practice") {
+    return <DartPracticeGame onBack={() => setScreen("menu")} />;
+  }
 
   return (
-    <div style={{ minHeight: "100vh", width: "100vw", background: "#ffffff", padding: "24px", fontFamily: "sans-serif", color: "#111", boxSizing: "border-box" }}>
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>🎯 Dart Practice Tracker</h1>
-        <StartNewGameButton onClick={startNewGame} />
-        {gameStart && (
-          <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
-            Game started: {gameStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    <div style={appShellStyle}>
+      <div style={contentStyle}>
+        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>All Games</h1>
+        <p style={{ marginTop: 0, marginBottom: 24, color: "#555" }}>
+          Choose a game to start tracking.
+        </p>
+        <section style={menuCardStyle}>
+          <div>
+            <h2 style={{ fontSize: 18, margin: "0 0 6px" }}>Dart Practice Tracker</h2>
+            <p style={{ margin: 0, color: "#555" }}>
+              The existing target-by-target practice game.
+            </p>
           </div>
-        )}
-        {gameStart && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {TARGETS.map((target) => (
-              <AttemptsRow
-                key={target}
-                target={target}
-                attempts={data[target] || []}
-                onChange={(i, value) => {
-                  updateAttempt(target, i, value);
-                  // Move to next row if needed
-                  if (
-                    shouldAdvanceRow(value.trim(), target) &&
-                    i === (data[target]?.length ?? 1) - 1
-                  ) {
-                    const nextTarget = target + 1;
-                    if (nextTarget <= TARGETS.length) {
-                      if (!data[nextTarget] || data[nextTarget].length === 0) {
-                        setData((prev) => ({ ...prev, [nextTarget]: [""] }));
-                      }
-                      setFocusKey(`${nextTarget}-0`);
-                    }
-                  } else if (
-                    shouldAddAttempt(value.trim(), target) &&
-                    i === (data[target]?.length ?? 1) - 1
-                  ) {
-                    addAttempt(target);
-                  }
-                }}
-                onAdd={() => addAttempt(target)}
-                inputRefs={inputRefs}
-                focusedInputs={focusedInputs}
-                setFocusedInputs={setFocusedInputs}
-                setFocusKey={setFocusKey}
-                data={data}
-              />
-            ))}
-          </div>
-        )}
-        {gameStart && (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 24 }}>
-            <SaveButton
-              onClick={() => {
-                const content = TARGETS.map((target) => data[target]?.join(" ")).join("\n");
-                const blob = new Blob([content], { type: "text/plain" });
-                const pad = (n: number) => n.toString().padStart(2, '0');
-                const d = gameStart ? new Date(gameStart) : new Date();
-                const timestamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-                const filename = `dart-practice-${timestamp}.txt`;
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                link.click();
-              }}
-            />
-            <StatsButton
-              onClick={() => {
-                setShowStats(true);
-              }}
-            />
-          </div>
-        )}
-        {showStats && (
-          <StatsSection data={data} />
-        )}
+          <button onClick={() => setScreen("dart-practice")} style={gameButtonStyle}>
+            Open Game
+          </button>
+        </section>
       </div>
     </div>
   );

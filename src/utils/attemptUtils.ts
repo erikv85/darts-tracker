@@ -23,6 +23,6 @@ export function shouldAddAttempt(value: string): boolean {
 
 // Should auto-advance to next row?
 export function shouldAdvanceRow(value: string, target: number): boolean {
-  if (value === String(target) && (value !== "1" || value === "10")) return true;
-  return false;
+  if (value !== String(target)) return false;
+  return value !== "1";
 }
