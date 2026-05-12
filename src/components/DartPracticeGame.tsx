@@ -98,7 +98,19 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
         >
           Back to All Games
         </button>
-        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>Dart Practice Tracker</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>Friendly round the clock</h1>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: 12,
+            border: "1px solid #ddd",
+            borderRadius: 8,
+            background: "#fafafa",
+            color: "#333",
+          }}
+        >
+          <strong>Rules:</strong> Hit 1-20 in order. Doubles and triples count as singles. Arrows that fall off still count.
+        </div>
         <StartNewGameButton onClick={startNewGame} />
         {gameStart && (
           <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
@@ -151,7 +163,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
                 const pad = (n: number) => n.toString().padStart(2, "0");
                 const d = gameStart ? new Date(gameStart) : new Date();
                 const timestamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-                const filename = `dart-practice-${timestamp}.txt`;
+                const filename = `friendly-round-the-clock-${timestamp}.txt`;
                 const link = document.createElement("a");
                 link.href = URL.createObjectURL(blob);
                 link.download = filename;

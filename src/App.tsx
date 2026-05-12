@@ -55,9 +55,9 @@ export default function App() {
         </p>
         <section style={menuCardStyle}>
           <div>
-            <h2 style={{ fontSize: 18, margin: "0 0 6px" }}>Dart Practice Tracker</h2>
+            <h2 style={{ fontSize: 18, margin: "0 0 6px" }}>Friendly round the clock</h2>
             <p style={{ margin: 0, color: "#555" }}>
-              The existing target-by-target practice game.
+              Hit 1 through 20 in order, with doubles and triples counting as singles.
             </p>
           </div>
           <button onClick={() => setScreen("dart-practice")} style={gameButtonStyle}>
