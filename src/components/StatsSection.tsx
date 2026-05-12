@@ -1,6 +1,7 @@
 
 import { TARGETS } from "../utils/constants";
 import { getAverageThrows } from "../utils/gameStats";
+import { getAttemptTarget, isMissAttempt } from "../utils/attemptUtils";
 import type { Attempt } from "../utils/constants";
 
 interface StatsSectionProps {
@@ -13,8 +14,8 @@ const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
   const firstThrowAccuracy = TARGETS.reduce((acc, target) => {
     const row = data[target] || [];
     if (row[0] && row[0].trim() !== "") {
-      if (row[0].trim() === String(target)) acc.hits++;
-      else if (row[0].trim().toUpperCase() === "X") acc.misses++;
+      if (getAttemptTarget(row[0]) === target) acc.hits++;
+      else if (isMissAttempt(row[0])) acc.misses++;
       else acc.wrong++;
       acc.total++;
     }
@@ -25,8 +26,8 @@ const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
   const shortTerm = TARGETS.reduce((acc, target) => {
     const row = (data[target] || []).slice(0, 2);
     row.forEach(val => {
-      if (val.trim() === String(target)) acc.hits++;
-      else if (val.trim().toUpperCase() === "X") acc.misses++;
+      if (getAttemptTarget(val) === target) acc.hits++;
+      else if (isMissAttempt(val)) acc.misses++;
       else if (val.trim() !== "") acc.wrong++;
     });
     acc.total += row.filter(v => v.trim() !== "").length;
@@ -41,8 +42,8 @@ const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
     const missIdx: number[] = [];
     const wrongIdx: number[] = [];
     row.forEach((val, i) => {
-      if (val.trim().toUpperCase() === "X") missIdx.push(i+1);
-      else if (val.trim() !== "" && val.trim() !== String(target)) wrongIdx.push(i+1);
+      if (isMissAttempt(val)) missIdx.push(i+1);
+      else if (val.trim() !== "" && getAttemptTarget(val) !== target) wrongIdx.push(i+1);
     });
     if (missIdx.length > 0) missedThrows.push({ target, indices: missIdx });
     if (wrongIdx.length > 0) wrongNumberThrows.push({ target, value: row[wrongIdx[0]-1], indices: wrongIdx });
@@ -63,7 +64,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
   const boardControl = attemptsPerTarget.filter(n => n === 1).length / TARGETS.length;
   const precision = TARGETS.reduce((acc, target) => {
     const row = data[target] || [];
-    const hits = row.filter(v => v.trim() === String(target)).length;
+    const hits = row.filter(v => getAttemptTarget(v) === target).length;
     acc.total += (row.filter(v => v.trim() !== "").length);
     acc.hits += hits;
     return acc;
@@ -74,7 +75,7 @@ const StatsSection: React.FC<StatsSectionProps> = ({ data }) => {
   const perTargetAccuracy = TARGETS.map(target => {
     const row = data[target] || [];
     const attempts = row.filter(v => v.trim() !== "").length;
-    const hits = row.filter(v => v.trim() === String(target)).length;
+    const hits = row.filter(v => getAttemptTarget(v) === target).length;
     return { target, accuracy: attempts ? hits/attempts : 0, attempts };
   });
   const best = perTargetAccuracy.reduce((a, b) => (b.accuracy > a.accuracy ? b : a), perTargetAccuracy[0]);

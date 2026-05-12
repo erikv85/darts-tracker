@@ -1,4 +1,5 @@
 import React from "react";
+import { getAttemptTarget } from "../utils/attemptUtils";
 
 type Attempt = string;
 
@@ -51,9 +52,9 @@ const AttemptsRow: React.FC<AttemptsRowProps> = ({
                   onAdd();
                 }
               }}
-              maxLength={2}
+              maxLength={3}
               style={{
-                width: "2.5ch",
+                width: "4ch",
                 height: 22,
                 textAlign: "center",
                 border: "1px solid #ccc",
@@ -88,7 +89,7 @@ const AttemptsRow: React.FC<AttemptsRowProps> = ({
           return (
             nonEmpty.length > 0 &&
             !anyFocused &&
-            last !== String(target)
+            getAttemptTarget(last ?? "") !== target
           ) ? (
             <span style={{ color: "red", fontSize: 16, fontWeight: "bold" }}>!</span>
           ) : null;

@@ -6,7 +6,7 @@ import StatsButton from "./StatsButton";
 import StatsSection from "./StatsSection";
 import {
   formatAttemptInput,
-  isValidAttempt,
+  isAllowedAttemptInput,
   shouldAddAttempt,
   shouldAdvanceRow,
 } from "../utils/attemptUtils";
@@ -35,8 +35,9 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   };
 
   const updateAttempt = (target: number, index: number, raw: string) => {
+    if (!isAllowedAttemptInput(raw)) return;
+
     const value = formatAttemptInput(raw);
-    if (!isValidAttempt(value)) return;
 
     setData((prev) => {
       const copy = { ...prev };
