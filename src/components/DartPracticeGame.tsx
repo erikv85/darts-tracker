@@ -18,15 +18,64 @@ interface DartPracticeGameProps {
   onBack: () => void;
 }
 
-const STORAGE_KEY = "friendly-round-the-clock-save";
+const LEGACY_STORAGE_KEY = "friendly-round-the-clock-save";
+const ACTIVE_GAME_STORAGE_KEY = "friendly-round-the-clock-active";
+const FINISHED_GAMES_STORAGE_KEY = "friendly-round-the-clock-finished";
 
-interface SavedGame {
+interface SavedGameBase {
   gameId: "friendly-round-the-clock";
-  isFinished: boolean;
+  id: string;
   gameStart: string | null;
-  finishedAt: string | null;
   data: Record<number, Attempt[]>;
   showStats: boolean;
+}
+
+interface ActiveGame extends SavedGameBase {
+  isFinished: false;
+  finishedAt: null;
+}
+
+interface FinishedGame extends SavedGameBase {
+  isFinished: true;
+  finishedAt: string;
+}
+
+interface LegacySavedGame {
+  gameId?: "friendly-round-the-clock";
+  id?: string;
+  isFinished?: boolean;
+  gameStart: string | null;
+  finishedAt?: string | null;
+  data: Record<number, Attempt[]>;
+  showStats: boolean;
+}
+
+function createGameId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `game-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function sameFinishedGame(a: FinishedGame, b: FinishedGame) {
+  return (
+    a.gameStart === b.gameStart &&
+    a.finishedAt === b.finishedAt &&
+    JSON.stringify(a.data) === JSON.stringify(b.data)
+  );
+}
+
+function getFinishedGames(): FinishedGame[] {
+  const rawFinishedGames = window.localStorage.getItem(FINISHED_GAMES_STORAGE_KEY);
+  return rawFinishedGames ? (JSON.parse(rawFinishedGames) as FinishedGame[]) : [];
+}
+
+function getTotalThrows(data: Record<number, Attempt[]>) {
+  return Object.values(data).reduce(
+    (sum, attempts) => sum + attempts.filter((attempt) => attempt.trim() !== "").length,
+    0,
+  );
 }
 
 export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
@@ -37,23 +86,69 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [focusedInputs, setFocusedInputs] = useState<Record<string, boolean>>({});
   const [showStats, setShowStats] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [finishedGames, setFinishedGames] = useState<FinishedGame[]>([]);
+  const [finishedGamesCount, setFinishedGamesCount] = useState(0);
   const hasLoadedSavedGame = useRef(false);
 
   useEffect(() => {
-    const rawSavedGame = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawSavedGame) {
-      hasLoadedSavedGame.current = true;
-      return;
-    }
-
     try {
-      const savedGame = JSON.parse(rawSavedGame) as SavedGame;
-      if (!savedGame.isFinished) {
-        setGameStart(savedGame.gameStart ? new Date(savedGame.gameStart) : null);
-        setData(savedGame.data ?? {});
-        setShowStats(savedGame.showStats ?? false);
-        setSaveMessage("Loaded saved game from this browser.");
+      const rawLegacySavedGame = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (rawLegacySavedGame) {
+        const legacySavedGame = JSON.parse(rawLegacySavedGame) as LegacySavedGame;
+
+        if (legacySavedGame.isFinished) {
+          const finishedGames = getFinishedGames();
+
+          const migratedFinishedGame: FinishedGame = {
+            gameId: "friendly-round-the-clock",
+            id: legacySavedGame.id ?? createGameId(),
+            isFinished: true,
+            gameStart: legacySavedGame.gameStart,
+            finishedAt: legacySavedGame.finishedAt ?? new Date().toISOString(),
+            data: legacySavedGame.data ?? {},
+            showStats: legacySavedGame.showStats ?? false,
+          };
+
+          if (!finishedGames.some((game) => sameFinishedGame(game, migratedFinishedGame))) {
+            window.localStorage.setItem(
+              FINISHED_GAMES_STORAGE_KEY,
+              JSON.stringify([migratedFinishedGame, ...finishedGames]),
+            );
+          }
+        } else {
+          const migratedActiveGame: ActiveGame = {
+            gameId: "friendly-round-the-clock",
+            id: legacySavedGame.id ?? createGameId(),
+            isFinished: false,
+            gameStart: legacySavedGame.gameStart,
+            finishedAt: null,
+            data: legacySavedGame.data ?? {},
+            showStats: legacySavedGame.showStats ?? false,
+          };
+
+          window.localStorage.setItem(
+            ACTIVE_GAME_STORAGE_KEY,
+            JSON.stringify(migratedActiveGame),
+          );
+        }
+
+        window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       }
+
+      const rawActiveGame = window.localStorage.getItem(ACTIVE_GAME_STORAGE_KEY);
+      if (rawActiveGame) {
+        const activeGame = JSON.parse(rawActiveGame) as ActiveGame;
+        if (!activeGame.isFinished) {
+          setGameStart(activeGame.gameStart ? new Date(activeGame.gameStart) : null);
+          setData(activeGame.data ?? {});
+          setShowStats(activeGame.showStats ?? false);
+          setSaveMessage("Loaded saved game from this browser.");
+        }
+      }
+
+      const storedFinishedGames = getFinishedGames();
+      setFinishedGames(storedFinishedGames);
+      setFinishedGamesCount(storedFinishedGames.length);
     } catch {
       setSaveMessage("Could not load saved game.");
     } finally {
@@ -61,15 +156,30 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
     }
   }, []);
 
-  const persistGame = (savedGame: SavedGame) => {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedGame));
+  const persistActiveGame = (savedGame: ActiveGame) => {
+    window.localStorage.setItem(ACTIVE_GAME_STORAGE_KEY, JSON.stringify(savedGame));
+  };
+
+  const appendFinishedGame = (savedGame: FinishedGame) => {
+    const finishedGames = getFinishedGames();
+    const updatedFinishedGames = [savedGame, ...finishedGames];
+    window.localStorage.setItem(
+      FINISHED_GAMES_STORAGE_KEY,
+      JSON.stringify(updatedFinishedGames),
+    );
+    setFinishedGames(updatedFinishedGames);
+    setFinishedGamesCount(updatedFinishedGames.length);
   };
 
   useEffect(() => {
     if (!hasLoadedSavedGame.current || !gameStart) return;
 
-    persistGame({
+    const rawActiveGame = window.localStorage.getItem(ACTIVE_GAME_STORAGE_KEY);
+    const existingGameId = rawActiveGame ? (JSON.parse(rawActiveGame) as ActiveGame).id ?? createGameId() : createGameId();
+
+    persistActiveGame({
       gameId: "friendly-round-the-clock",
+      id: existingGameId,
       isFinished: false,
       gameStart: gameStart.toISOString(),
       finishedAt: null,
@@ -91,8 +201,12 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const saveGame = () => {
     if (!gameStart) return;
 
-    persistGame({
+    const rawActiveGame = window.localStorage.getItem(ACTIVE_GAME_STORAGE_KEY);
+    const existingGameId = rawActiveGame ? (JSON.parse(rawActiveGame) as ActiveGame).id ?? createGameId() : createGameId();
+
+    persistActiveGame({
       gameId: "friendly-round-the-clock",
+      id: existingGameId,
       isFinished: false,
       gameStart: gameStart.toISOString(),
       finishedAt: null,
@@ -105,14 +219,19 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const finishGame = () => {
     if (!gameStart) return;
 
-    persistGame({
+    const rawActiveGame = window.localStorage.getItem(ACTIVE_GAME_STORAGE_KEY);
+    const existingGameId = rawActiveGame ? (JSON.parse(rawActiveGame) as ActiveGame).id ?? createGameId() : createGameId();
+
+    appendFinishedGame({
       gameId: "friendly-round-the-clock",
+      id: existingGameId,
       isFinished: true,
       gameStart: gameStart.toISOString(),
       finishedAt: new Date().toISOString(),
       data,
       showStats,
     });
+    window.localStorage.removeItem(ACTIVE_GAME_STORAGE_KEY);
 
     setGameStart(null);
     setData({});
@@ -201,7 +320,46 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
           <strong>Rules:</strong> Hit 1-20 in order. Doubles and triples count as singles. Arrows that fall off still count.
         </div>
         {saveMessage && (
-          <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>{saveMessage}</div>
+          <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
+            <div>{saveMessage}</div>
+            <div>{finishedGamesCount} finished game{finishedGamesCount === 1 ? "" : "s"} saved in this browser.</div>
+          </div>
+        )}
+        {finishedGamesCount > 0 && (
+          <section
+            style={{
+              marginBottom: 24,
+              padding: 12,
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "#fafafa",
+            }}
+          >
+            <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Latest Finished Games</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {finishedGames.slice(0, 10).map((game) => {
+                const finishedAt = new Date(game.finishedAt);
+                return (
+                  <div
+                    key={game.id}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 12,
+                      paddingBottom: 8,
+                      borderBottom: "1px solid #e5e5e5",
+                      color: "#333",
+                    }}
+                  >
+                    <span>
+                      {finishedAt.toLocaleDateString()} {finishedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <span>{getTotalThrows(game.data)} throws</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
         <StartNewGameButton onClick={startNewGame} />
         {gameStart && (
