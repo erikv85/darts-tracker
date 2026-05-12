@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AttemptsRow from "./AttemptsRow";
+import FinishButton from "./FinishButton";
 import SaveButton from "./SaveButton";
 import StartNewGameButton from "./StartNewGameButton";
 import StatsButton from "./StatsButton";
@@ -20,7 +21,10 @@ interface DartPracticeGameProps {
 const STORAGE_KEY = "friendly-round-the-clock-save";
 
 interface SavedGame {
+  gameId: "friendly-round-the-clock";
+  isFinished: boolean;
   gameStart: string | null;
+  finishedAt: string | null;
   data: Record<number, Attempt[]>;
   showStats: boolean;
 }
@@ -33,21 +37,46 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [focusedInputs, setFocusedInputs] = useState<Record<string, boolean>>({});
   const [showStats, setShowStats] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const hasLoadedSavedGame = useRef(false);
 
   useEffect(() => {
     const rawSavedGame = window.localStorage.getItem(STORAGE_KEY);
-    if (!rawSavedGame) return;
+    if (!rawSavedGame) {
+      hasLoadedSavedGame.current = true;
+      return;
+    }
 
     try {
       const savedGame = JSON.parse(rawSavedGame) as SavedGame;
-      setGameStart(savedGame.gameStart ? new Date(savedGame.gameStart) : null);
-      setData(savedGame.data ?? {});
-      setShowStats(savedGame.showStats ?? false);
-      setSaveMessage("Loaded saved game from this browser.");
+      if (!savedGame.isFinished) {
+        setGameStart(savedGame.gameStart ? new Date(savedGame.gameStart) : null);
+        setData(savedGame.data ?? {});
+        setShowStats(savedGame.showStats ?? false);
+        setSaveMessage("Loaded saved game from this browser.");
+      }
     } catch {
       setSaveMessage("Could not load saved game.");
+    } finally {
+      hasLoadedSavedGame.current = true;
     }
   }, []);
+
+  const persistGame = (savedGame: SavedGame) => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedGame));
+  };
+
+  useEffect(() => {
+    if (!hasLoadedSavedGame.current || !gameStart) return;
+
+    persistGame({
+      gameId: "friendly-round-the-clock",
+      isFinished: false,
+      gameStart: gameStart.toISOString(),
+      finishedAt: null,
+      data,
+      showStats,
+    });
+  }, [gameStart, data, showStats]);
 
   const startNewGame = () => {
     setGameStart(new Date());
@@ -60,14 +89,37 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   };
 
   const saveGame = () => {
-    const savedGame: SavedGame = {
-      gameStart: gameStart ? gameStart.toISOString() : null,
+    if (!gameStart) return;
+
+    persistGame({
+      gameId: "friendly-round-the-clock",
+      isFinished: false,
+      gameStart: gameStart.toISOString(),
+      finishedAt: null,
       data,
       showStats,
-    };
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedGame));
+    });
     setSaveMessage("Saved to this browser.");
+  };
+
+  const finishGame = () => {
+    if (!gameStart) return;
+
+    persistGame({
+      gameId: "friendly-round-the-clock",
+      isFinished: true,
+      gameStart: gameStart.toISOString(),
+      finishedAt: new Date().toISOString(),
+      data,
+      showStats,
+    });
+
+    setGameStart(null);
+    setData({});
+    setShowStats(false);
+    setFocusedInputs({});
+    setFocusKey(null);
+    setSaveMessage("Game finished.");
   };
 
   const updateAttempt = (target: number, index: number, raw: string) => {
@@ -197,6 +249,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
         {gameStart && (
           <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 24 }}>
             <SaveButton onClick={saveGame} />
+            <FinishButton onClick={finishGame} />
             <StatsButton
               onClick={() => {
                 setShowStats(true);
