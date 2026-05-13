@@ -78,6 +78,12 @@ function getTotalThrows(data: Record<number, Attempt[]>) {
   );
 }
 
+function formatThrowsPreview(data: Record<number, Attempt[]>) {
+  const totalThrows = getTotalThrows(data);
+  const averageThrows = Math.round((totalThrows / TARGETS.length) * 10) / 10;
+  return `${totalThrows} throws / ${averageThrows.toFixed(averageThrows % 1 === 0 ? 0 : 1)}`;
+}
+
 export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [gameStart, setGameStart] = useState<Date | null>(null);
   const [data, setData] = useState<Record<number, Attempt[]>>({});
@@ -354,7 +360,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
                     <span>
                       {finishedAt.toLocaleDateString()} {finishedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <span>{getTotalThrows(game.data)} throws</span>
+                    <span>{formatThrowsPreview(game.data)}</span>
                   </div>
                 );
               })}
