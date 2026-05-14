@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AttemptsRow from "./AttemptsRow";
 import FinishButton from "./FinishButton";
+import GameHistory from "./GameHistory";
 import SaveButton from "./SaveButton";
 import StartNewGameButton from "./StartNewGameButton";
 import StatsButton from "./StatsButton";
@@ -91,6 +92,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [focusKey, setFocusKey] = useState<string | null>(null);
   const [focusedInputs, setFocusedInputs] = useState<Record<string, boolean>>({});
   const [showStats, setShowStats] = useState(false);
+  const [view, setView] = useState<"game" | "history">("game");
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [finishedGames, setFinishedGames] = useState<FinishedGame[]>([]);
   const [finishedGamesCount, setFinishedGamesCount] = useState(0);
@@ -285,6 +287,10 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
     }
   }, [focusKey]);
 
+  if (view === "history") {
+    return <GameHistory onBack={() => setView("game")} />;
+  }
+
   return (
     <div
       style={{
@@ -298,20 +304,34 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
       }}
     >
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
-        <button
-          onClick={onBack}
-          style={{
-            marginBottom: 16,
-            padding: "6px 12px",
-            border: "1px solid #ccc",
-            borderRadius: 4,
-            background: "#f7f7f7",
-            color: "#111",
-            fontWeight: 600,
-          }}
-        >
-          Back to All Games
-        </button>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+          <button
+            onClick={onBack}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+              background: "#f7f7f7",
+              color: "#111",
+              fontWeight: 600,
+            }}
+          >
+            Back to All Games
+          </button>
+          <button
+            onClick={() => setView("history")}
+            style={{
+              padding: "6px 12px",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+              background: "#f7f7f7",
+              color: "#111",
+              fontWeight: 600,
+            }}
+          >
+            History
+          </button>
+        </div>
         <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 12 }}>Friendly round the clock</h1>
         <div
           style={{
