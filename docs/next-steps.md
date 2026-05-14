@@ -117,11 +117,9 @@ Allow the app to be installed on mobile/desktop and support basic offline use.
 - Offline use should not interfere with active-game restore or finished-game history.
 
 ## Suggested Order
-1. Add shared attempt classification utilities.
-2. Add 301/501.
-3. Add directional distance/problem-area analysis.
-4. Add PWA support.
-5. Add board visualization if useful.
+1. Add 301/501.
+2. Add directional distance/problem-area analysis.
+3. Add PWA support.
 
 ## Open Questions
 - What bust rules should 301/501 use?
