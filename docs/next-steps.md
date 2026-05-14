@@ -23,29 +23,7 @@ Add additional game modes alongside Friendly round the clock.
 - Need single/double/triple/bull scoring support.
 - Probably need turn grouping (3 darts per visit).
 
-## 2. Add Outer Bull and Inner Bull
-Bull support is needed for current and future games.
-
-### Questions to settle
-- Naming:
-  - `OB` / `IB`
-  - `SB` / `DB`
-  - `25` / `50`
-- For round-the-clock:
-  - Bulls are just supported as recorded hits.
-  - They are not part of the sequence.
-  - For round-the-clock they should behave like misses / non-progress results.
-- For 301/501:
-  - outer bull scores 25
-  - inner bull scores 50
-
-### Likely implementation work
-- Expand allowed input parsing.
-- Expand canonical rendering rules.
-- Expand hit/miss classification logic.
-- Update stats code to understand bull segments.
-
-## 3. Add Distance / Board Area Calculations
+## 2. Add Distance / Board Area Calculations
 Use the 20 board sections plus hit/miss data to identify player success and problem areas.
 
 ### Goal
@@ -100,7 +78,7 @@ Build a directional/positional model from attempts so we can surface patterns li
    - start simple with textual summaries
    - later consider a board visualization
 
-## 4. Make Web App a PWA
+## 3. Make Web App a PWA
 Add installable/offline-friendly web app support.
 
 ### Goal
@@ -139,15 +117,13 @@ Allow the app to be installed on mobile/desktop and support basic offline use.
 - Offline use should not interfere with active-game restore or finished-game history.
 
 ## Suggested Order
-1. Add bull support first.
-2. Add shared attempt classification utilities.
-3. Add 301/501.
-4. Add directional distance/problem-area analysis.
-5. Add PWA support.
-6. Add board visualization if useful.
+1. Add shared attempt classification utilities.
+2. Add 301/501.
+3. Add directional distance/problem-area analysis.
+4. Add PWA support.
+5. Add board visualization if useful.
 
 ## Open Questions
-- What exact bull notation should be used?
 - What bust rules should 301/501 use?
 - Should 301/501 require double-out?
 - How should margin misses be represented in spatial analysis?
