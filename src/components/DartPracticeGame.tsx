@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import AttemptsRow from "./AttemptsRow";
+import ExportButton from "./ExportButton";
 import FinishButton from "./FinishButton";
 import GameHistory from "./GameHistory";
 import SaveButton from "./SaveButton";
@@ -206,6 +207,21 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
     setSaveMessage(null);
   };
 
+  const exportFinishedGames = () => {
+    const games = getFinishedGames();
+    const content = JSON.stringify(games, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    const d = new Date();
+    const timestamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+    const filename = `friendly-round-the-clock-history-${timestamp}.json`;
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const saveGame = () => {
     if (!gameStart) return;
 
@@ -387,7 +403,10 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
             </div>
           </section>
         )}
-        <StartNewGameButton onClick={startNewGame} />
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
+          <StartNewGameButton onClick={startNewGame} />
+          <ExportButton onClick={exportFinishedGames} />
+        </div>
         {gameStart && (
           <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>
             Game started: {gameStart.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
