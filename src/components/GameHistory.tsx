@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { TARGETS } from "../utils/constants";
+import { formatAttemptInput } from "../utils/attemptUtils";
 import type { Attempt } from "../utils/constants";
 
 const FINISHED_GAMES_STORAGE_KEY = "friendly-round-the-clock-finished";
@@ -35,22 +36,36 @@ interface GameHistoryProps {
 export default function GameHistory({ onBack }: GameHistoryProps) {
   const chartData = useMemo(() => {
     const games = getFinishedGames();
-    const totals: Record<number, number> = {};
-    TARGETS.forEach((t) => (totals[t] = 0));
+    const perTarget: Record<number, number> = {};
+    let obCount = 0;
+    let ibCount = 0;
+    TARGETS.forEach((t) => (perTarget[t] = 0));
 
     games.forEach((game) => {
       TARGETS.forEach((target) => {
         const attempts = (game.data[target] || []).filter(
           (v: string) => v.trim() !== "",
         );
-        totals[target] += attempts.length;
+        perTarget[target] += attempts.length;
+      });
+
+      Object.values(game.data).forEach((row) => {
+        (row as Attempt[]).forEach((v) => {
+          const formatted = formatAttemptInput(v);
+          if (formatted === "OB") obCount++;
+          else if (formatted === "IB") ibCount++;
+        });
       });
     });
 
-    return TARGETS.map((target) => ({
-      target: String(target),
-      attempts: totals[target],
-    }));
+    return [
+      ...TARGETS.map((target) => ({
+        target: String(target),
+        attempts: perTarget[target],
+      })),
+      { target: "OB", attempts: obCount },
+      { target: "IB", attempts: ibCount },
+    ];
   }, []);
 
   return (

@@ -2,8 +2,11 @@
 export function formatAttemptInput(raw: string): string {
   let value = raw.trim();
   if (value.toLowerCase() === "x") return "X";
+  if (value.toLowerCase() === "o") return "OB";
+  if (value.toLowerCase() === "b") return "IB";
 
   const normalized = value.toUpperCase();
+  if (normalized === "OB" || normalized === "IB") return normalized;
   if (/^[TDM]$/.test(normalized)) return normalized;
 
   const prefixMatch = normalized.match(/^([TDM])(\d{1,2})$/);
@@ -45,12 +48,12 @@ export function getAttemptTarget(value: string): number | null {
 
 export function isMissAttempt(value: string): boolean {
   const normalized = formatAttemptInput(value);
-  return normalized === "X" || /^M\d{1,2}$/.test(normalized);
+  return normalized === "X" || normalized === "OB" || normalized === "IB" || /^M\d{1,2}$/.test(normalized);
 }
 
 function isCompleteMissAttempt(value: string): boolean {
   const normalized = formatAttemptInput(value);
-  if (normalized === "X") return true;
+  if (normalized === "X" || normalized === "OB" || normalized === "IB") return true;
   if (!/^M\d{1,2}$/.test(normalized)) return false;
 
   const marginTarget = Number(normalized.slice(1));
@@ -60,8 +63,8 @@ function isCompleteMissAttempt(value: string): boolean {
 export function isAllowedAttemptInput(value: string): boolean {
   const normalized = value.trim().toUpperCase();
 
-  if (normalized === "" || normalized === "X") return true;
-  if (/^[TDM]$/.test(normalized)) return true;
+  if (normalized === "" || normalized === "X" || normalized === "OB" || normalized === "IB") return true;
+  if (/^[TDM]$/.test(normalized) || normalized === "O" || normalized === "B") return true;
   if (/^[1-9]$/.test(normalized)) return true;
   if (/^([TDM])(\d)$/.test(normalized) || /^(\d)([TDM])$/.test(normalized)) return true;
 
