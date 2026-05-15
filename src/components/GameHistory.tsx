@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import {
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -90,6 +92,25 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
     ];
 
     return { chartData, gameKeys };
+  }, []);
+
+  const averageCurve = useMemo(() => {
+    const games = getFinishedGames().slice().reverse();
+    if (games.length === 0) return [];
+
+    let cumulativeThrows = 0;
+
+    return games.map((game, i) => {
+      const gameThrows = Object.values(game.data).reduce(
+        (sum, attempts) => sum + (attempts as Attempt[]).filter((v) => v.trim() !== "").length,
+        0,
+      );
+      cumulativeThrows += gameThrows;
+      return {
+        game: i + 1,
+        average: Math.round((cumulativeThrows / ((i + 1) * TARGETS.length)) * 100) / 100,
+      };
+    });
   }, []);
 
   const ranking = useMemo(() => {
@@ -197,6 +218,41 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {averageCurve.length > 0 && (
+          <div style={{ width: "100%", height: 300, marginTop: 24 }}>
+            <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Average Development</h2>
+            <ResponsiveContainer>
+              <LineChart
+                data={averageCurve}
+                margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="game"
+                  label={{
+                    value: "Game",
+                    position: "insideBottom",
+                    offset: -5,
+                  }}
+                />
+                <YAxis
+                  label={{
+                    value: "Avg throws / target",
+                    angle: -90,
+                    position: "insideLeft",
+                  }}
+                />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="average"
+                  stroke="#8884d8"
+                  dot={{ r: 3 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
         {ranking.length > 0 && (
           <section
             style={{
