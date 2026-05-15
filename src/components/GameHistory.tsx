@@ -172,7 +172,7 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
                   }}
                 >
                   <span>
-                    {i + 1}. {r.target}
+                    {r.target}
                   </span>
                   <span>{r.attempts} throws</span>
                 </div>
