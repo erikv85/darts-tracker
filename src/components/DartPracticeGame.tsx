@@ -97,6 +97,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [finishedGames, setFinishedGames] = useState<FinishedGame[]>([]);
   const [finishedGamesCount, setFinishedGamesCount] = useState(0);
+  const [selectedGame, setSelectedGame] = useState<FinishedGame | null>(null);
   const hasLoadedSavedGame = useRef(false);
 
   useEffect(() => {
@@ -367,7 +368,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
             <div>{finishedGamesCount} finished game{finishedGamesCount === 1 ? "" : "s"} saved in this browser.</div>
           </div>
         )}
-        {finishedGamesCount > 0 && (
+        {finishedGamesCount > 0 && !selectedGame && (
           <section
             style={{
               marginBottom: 24,
@@ -384,6 +385,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
                 return (
                   <div
                     key={game.id}
+                    onClick={() => setSelectedGame(game)}
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -391,12 +393,66 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
                       paddingBottom: 8,
                       borderBottom: "1px solid #e5e5e5",
                       color: "#333",
+                      cursor: "pointer",
                     }}
                   >
                     <span>
                       {finishedAt.toLocaleDateString()} {finishedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                     <span>{formatThrowsPreview(game.data)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+        {selectedGame && (
+          <section
+            style={{
+              marginBottom: 24,
+              padding: 12,
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "#fafafa",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <button
+                onClick={() => setSelectedGame(null)}
+                style={{
+                  padding: "4px 8px",
+                  border: "1px solid #ccc",
+                  borderRadius: 4,
+                  background: "#f7f7f7",
+                  color: "#111",
+                  fontWeight: 600,
+                }}
+              >
+                Back
+              </button>
+              <h2 style={{ fontSize: 16, margin: 0 }}>
+                {new Date(selectedGame.finishedAt).toLocaleDateString()}{" "}
+                {new Date(selectedGame.finishedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+              </h2>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {TARGETS.map((target) => {
+                const attempts = (selectedGame.data[target] || []).filter((v) => v.trim() !== "");
+                return (
+                  <div
+                    key={target}
+                    style={{
+                      display: "flex",
+                      gap: 8,
+                      padding: "3px 0",
+                      borderBottom: "1px solid #eee",
+                      color: "#333",
+                    }}
+                  >
+                    <span style={{ fontWeight: 600, width: 20, textAlign: "right" }}>{target}</span>
+                    <span style={{ fontFamily: "monospace" }}>
+                      {attempts.length > 0 ? attempts.join(" ") : "\u2014"}
+                    </span>
                   </div>
                 );
               })}
