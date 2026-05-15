@@ -68,6 +68,28 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
     ];
   }, []);
 
+  const ranking = useMemo(() => {
+    const games = getFinishedGames();
+    const perTarget: Record<number, number> = {};
+    TARGETS.forEach((t) => (perTarget[t] = 0));
+
+    games.forEach((game) => {
+      TARGETS.forEach((target) => {
+        const attempts = (game.data[target] || []).filter(
+          (v: string) => v.trim() !== "",
+        );
+        perTarget[target] += attempts.length;
+      });
+    });
+
+    return TARGETS.map((target) => ({ target, attempts: perTarget[target] }))
+      .sort((a, b) => {
+        const diff = a.attempts - b.attempts;
+        if (diff !== 0) return diff;
+        return a.target - b.target;
+      });
+  }, []);
+
   return (
     <div
       style={{
@@ -125,6 +147,39 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        {ranking.length > 0 && (
+          <section
+            style={{
+              marginTop: 24,
+              padding: 12,
+              border: "1px solid #ddd",
+              borderRadius: 8,
+              background: "#fafafa",
+            }}
+          >
+            <h2 style={{ fontSize: 16, margin: "0 0 12px" }}>Target Ranking</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {ranking.map((r, i) => (
+                <div
+                  key={r.target}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    padding: "4px 0",
+                    borderBottom: i < ranking.length - 1 ? "1px solid #e5e5e5" : "none",
+                    color: "#333",
+                  }}
+                >
+                  <span>
+                    {i + 1}. {r.target}
+                  </span>
+                  <span>{r.attempts} throws</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
