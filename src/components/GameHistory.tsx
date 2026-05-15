@@ -166,7 +166,26 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
                   position: "insideLeft",
                 }}
               />
-              <Tooltip />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (!active || !payload || payload.length === 0) return null;
+                  const total = payload.reduce((sum, entry) => sum + (Number(entry.value) || 0), 0);
+                  return (
+                    <div
+                      style={{
+                        padding: "4px 8px",
+                        border: "1px solid #ccc",
+                        borderRadius: 4,
+                        background: "#fff",
+                        color: "#111",
+                        fontSize: 12,
+                      }}
+                    >
+                      {payload[0].payload.target}: {total}
+                    </div>
+                  );
+                }}
+              />
               {gameKeys.map((key, i) => (
                 <Bar
                   key={key}
