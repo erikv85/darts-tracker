@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-05-15
+
+- Average development line chart on history page (cumulative avg throws/target across games).
+- Finished game detail view — click a game in the list to inspect attempts per target (read-only).
+- Stacked bar chart segments per game with dynamic color generation.
+- Custom tooltip on bar chart showing total per target.
+- Remove rank number from target ranking list.
+
 ## 2026-05-14
 
 - Export button for finished games (JSON download).
