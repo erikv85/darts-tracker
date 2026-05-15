@@ -12,6 +12,10 @@ import { TARGETS } from "../utils/constants";
 import { formatAttemptInput } from "../utils/attemptUtils";
 import type { Attempt } from "../utils/constants";
 
+function gameColor(index: number, total: number) {
+  return `hsl(${(index * 360) / total}, 65%, 65%)`;
+}
+
 const FINISHED_GAMES_STORAGE_KEY = "friendly-round-the-clock-finished";
 
 interface FinishedGame {
@@ -34,38 +38,58 @@ interface GameHistoryProps {
 }
 
 export default function GameHistory({ onBack }: GameHistoryProps) {
-  const chartData = useMemo(() => {
+  const { chartData, gameKeys } = useMemo(() => {
     const games = getFinishedGames();
-    const perTarget: Record<number, number> = {};
-    let obCount = 0;
-    let ibCount = 0;
-    TARGETS.forEach((t) => (perTarget[t] = 0));
+    const perTargetPerGame: Record<number, number[]> = {};
+    const obPerGame: number[] = [];
+    const ibPerGame: number[] = [];
 
-    games.forEach((game) => {
+    TARGETS.forEach((t) => (perTargetPerGame[t] = []));
+    games.forEach((_, i) => {
+      obPerGame[i] = 0;
+      ibPerGame[i] = 0;
+    });
+
+    games.forEach((game, gIdx) => {
       TARGETS.forEach((target) => {
         const attempts = (game.data[target] || []).filter(
           (v: string) => v.trim() !== "",
         );
-        perTarget[target] += attempts.length;
+        perTargetPerGame[target] ??= [];
+        perTargetPerGame[target][gIdx] = attempts.length;
       });
 
       Object.values(game.data).forEach((row) => {
         (row as Attempt[]).forEach((v) => {
           const formatted = formatAttemptInput(v);
-          if (formatted === "OB") obCount++;
-          else if (formatted === "IB") ibCount++;
+          if (formatted === "OB") obPerGame[gIdx]++;
+          else if (formatted === "IB") ibPerGame[gIdx]++;
         });
       });
     });
 
-    return [
-      ...TARGETS.map((target) => ({
-        target: String(target),
-        attempts: perTarget[target],
-      })),
-      { target: "OB", attempts: obCount },
-      { target: "IB", attempts: ibCount },
+    const gameKeys = games.map((_, i) => `g${i}`);
+
+    const chartData = [
+      ...TARGETS.map((target) => {
+        const entry: Record<string, number | string> = { target: String(target) };
+        gameKeys.forEach((key, i) => {
+          entry[key] = perTargetPerGame[target]?.[i] ?? 0;
+        });
+        return entry;
+      }),
+      ...(() => {
+        const obEntry: Record<string, number | string> = { target: "OB" };
+        const ibEntry: Record<string, number | string> = { target: "IB" };
+        gameKeys.forEach((key, i) => {
+          obEntry[key] = obPerGame[i] ?? 0;
+          ibEntry[key] = ibPerGame[i] ?? 0;
+        });
+        return [obEntry, ibEntry];
+      })(),
     ];
+
+    return { chartData, gameKeys };
   }, []);
 
   const ranking = useMemo(() => {
@@ -143,7 +167,14 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
                 }}
               />
               <Tooltip />
-              <Bar dataKey="attempts" fill="#8884d8" />
+              {gameKeys.map((key, i) => (
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  stackId="stack"
+                  fill={gameColor(i, gameKeys.length)}
+                />
+              ))}
             </BarChart>
           </ResponsiveContainer>
         </div>
