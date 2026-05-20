@@ -31,9 +31,12 @@ Each game type has two localStorage keys:
 - `<game-id>-active` - one ongoing game, autosaved on every state change
 - `<game-id>-finished` - array of immutable finished games, newest-first
 
-## Changelog
+## Documentation upkeep
 
-`CHANGELOG.md` is kept up to date with every change - no need to ask.
+All agents must independently keep the following files up to date without being asked:
+- `README.md` - project description and usage
+- `CHANGELOG.md` - record every user-facing change
+- `AGENTS.md` - this file (commands, conventions, architecture notes)
 
 ## Style
 

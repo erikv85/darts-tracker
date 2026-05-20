@@ -115,6 +115,8 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
 
   const ranking = useMemo(() => {
     const games = getFinishedGames();
+    const gameCount = games.length;
+    if (gameCount === 0) return [];
     const perTarget: Record<number, number> = {};
     TARGETS.forEach((t) => (perTarget[t] = 0));
 
@@ -127,7 +129,11 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
       });
     });
 
-    return TARGETS.map((target) => ({ target, attempts: perTarget[target] }))
+    return TARGETS.map((target) => ({
+      target,
+      attempts: perTarget[target],
+      avg: perTarget[target] / gameCount,
+    }))
       .sort((a, b) => {
         const diff = a.attempts - b.attempts;
         if (diff !== 0) return diff;
@@ -280,7 +286,7 @@ export default function GameHistory({ onBack }: GameHistoryProps) {
                   <span>
                     {r.target}
                   </span>
-                  <span>{r.attempts} throws</span>
+                  <span>{r.attempts} throws / {r.avg.toFixed(1)}</span>
                 </div>
               ))}
             </div>

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-05-20
+
+- Target ranking list now shows average throws per game (e.g. "23 throws / 3.3").
+
 ## 2026-05-15
 
 - Average development line chart on history page (cumulative avg throws/target across games).
