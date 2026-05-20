@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import AttemptsRow from "./AttemptsRow";
 import ExportButton from "./ExportButton";
 import FinishButton from "./FinishButton";
+import ImportButton from "./ImportButton";
 import GameHistory from "./GameHistory";
 import SaveButton from "./SaveButton";
 import StartNewGameButton from "./StartNewGameButton";
@@ -221,6 +222,37 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(link.href);
+  };
+
+  const importGames = (imported: unknown[]) => {
+    const existing = getFinishedGames();
+    const merged = [...existing];
+    let added = 0;
+    for (const raw of imported) {
+      const g = raw as Record<string, unknown>;
+      const normalized: FinishedGame = {
+        gameId: "friendly-round-the-clock",
+        id: (g.id as string) || createGameId(),
+        isFinished: true,
+        gameStart: (g.gameStart as string | null) ?? null,
+        finishedAt: g.finishedAt as string,
+        data: (g.data as Record<number, Attempt[]>) ?? {},
+        showStats: false,
+      };
+      if (!merged.some((g) => sameFinishedGame(g, normalized))) {
+        merged.push(normalized);
+        added++;
+      }
+    }
+    if (added > 0) {
+      merged.sort((a, b) => new Date(b.finishedAt).getTime() - new Date(a.finishedAt).getTime());
+      window.localStorage.setItem(FINISHED_GAMES_STORAGE_KEY, JSON.stringify(merged));
+      setFinishedGames(merged);
+      setFinishedGamesCount(merged.length);
+      setSaveMessage(`Imported ${added} game${added === 1 ? "" : "s"}.`);
+    } else {
+      setSaveMessage("No new games to import.");
+    }
   };
 
   const saveGame = () => {
@@ -462,6 +494,7 @@ export default function DartPracticeGame({ onBack }: DartPracticeGameProps) {
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 16 }}>
           <StartNewGameButton onClick={startNewGame} />
           <ExportButton onClick={exportFinishedGames} />
+          <ImportButton onImport={importGames} />
         </div>
         {gameStart && (
           <div style={{ fontSize: 12, color: "#555", marginBottom: 16 }}>

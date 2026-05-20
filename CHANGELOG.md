@@ -2,6 +2,7 @@
 
 ## 2026-05-20
 
+- Import button for finished games (JSON file, deduplicates, merges into existing games).
 - Target ranking list now shows average throws per game (e.g. "23 throws / 3.3").
 
 ## 2026-05-15
